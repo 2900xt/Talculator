@@ -1,0 +1,64 @@
+Press 'n' on the keyboard to graph a new function
+Enter the desired function, f(x), in the prompt box
+
+A function is made up of a collection of terms that are ADDED together (NO SUBTRACTION)
+A function can have infinitely many terms
+Example:
+
+2^(4 * x) + 8 * x^3 + -3 * ln(x) + 2
+
+---------------------------------------------
+
+Note: All constants and linear equations are also in this category, as well as fractional powers, etc
+
+Polynomial Terms -
+a = coefficient of x
+b = power of x
+
+Syntax:
+f(x) = a * x^b
+
+---------------------------------------------
+
+Exponential Terms -
+a = coefficient of x
+b = base
+
+Syntax:
+f(x) = b^(a * x)
+
+THERE MUST BE A PARENTHESIS
+---------------------------------------------
+
+Logarithmic Terms -
+a = coefficient of x
+b = base of log
+
+LogBase:
+f(x)= log b (a * x)
+
+Natural Log:
+f(x) = ln(a * x)
+
+Log10:
+f(x) = log(a * x)
+
+---------------------------------------------
+
+Trigonometric Functions -
+a = power of sine
+b = coefficient of term
+
+Syntax:
+f(x) = b * sin a (x)
+
+There are no other trig functions because I am too lazy to implement those
+
+--------------------------------------------
+
+Derivatives and Inverse Functions -
+
+Inverse functions are available by prefixing your function with 'inv'
+Derivatives are available by prefixing you functions with 'd/dx'
+
+Note: Derivatives only work for polynomials and Inverse functions only work for polynomials, logarithmic and exponential functions

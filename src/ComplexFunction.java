@@ -57,11 +57,19 @@ public class ComplexFunction
     public static @NotNull ComplexFunction parseFunction(String data)
     {
         ComplexFunction func = new ComplexFunction();
-        String[] terms = data.split(" \\+ ");
+
+        String expression = data;
+        if(data.contains("d/dx")) expression = expression.substring(4);
+        else if(data.contains("inv")) expression = expression.substring(3);
+
+        String[] terms = expression.split(" \\+ ");
         for(String term : terms)
         {
             func.terms.add(BasicFunction.parseFunction(term));
         }
+
+        if(data.contains("d/dx")) return func.derivative();
+        if(data.contains("inv")) return func.inverse();
         return func;
     }
 }
