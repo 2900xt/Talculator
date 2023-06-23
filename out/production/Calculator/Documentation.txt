@@ -1,11 +1,12 @@
 Press 'n' on the keyboard to graph a new function
 Enter the desired function, f(x), in the prompt box
 
-A function is made up of a collection of terms that are ADDED together (NO SUBTRACTION)
+A function is made up of a collection of terms that are added together
 A function can have infinitely many terms
 Example:
 
 2^(4 * x) + 8 * x^3 + -3 * ln(x) + 2
+
 
 ---------------------------------------------
 

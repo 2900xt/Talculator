@@ -1,28 +1,30 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main extends JPanel
 {
-    public static final int WIDTH = 1920, HEIGHT = 1080;
-    public static final int UNIT_X = WIDTH / 20, UNIT_Y = HEIGHT / 20;
-    public static final int HALF_X = WIDTH / 2, HALF_Y = HEIGHT / 2;
+    public static final int SCREEN_WIDTH = 2560, OFFSET_X = 560;
+    public static final int WIDTH = SCREEN_WIDTH - OFFSET_X, HEIGHT = 1440;
+    public static double UNIT_X = WIDTH / 20.0, UNIT_Y = HEIGHT / 20.0;
+    public static final double CONST_UNIT_X = UNIT_X, CONST_UNIT_Y = UNIT_Y;
+    public static final int HALF_X = (WIDTH / 2) + OFFSET_X, HALF_Y = (HEIGHT / 2);
     public BufferedImage image;
     public Graphics g;
-    public HashMap<ComplexFunction, Color> functions;
+    public ArrayList<ComplexFunction> functions;
     public Main()
     {
         super();
-        image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        image = new BufferedImage(SCREEN_WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
         g = image.getGraphics();
-        functions = new HashMap<>();
-        g.setFont(new Font("Arial", Font.BOLD, 20));
+        functions = new ArrayList<>();
+        g.setFont(new Font("Segoe Script", Font.BOLD, 24));
         addKeyListener(new KeyboardInput());
         setFocusable(true);
         drawGridlines();
@@ -33,10 +35,13 @@ public class Main extends JPanel
         int xpos = (int)(x * UNIT_X) + HALF_X, ypos = (int)(-y * UNIT_Y) + HALF_Y;
         g.fillOval(xpos, ypos, 4, 4);
     }
-    public void graphFunction(ComplexFunction f, Color c)
+    public void graphFunction(ComplexFunction f)
     {
-        g.setColor(c);
-        for(double x = -10; x < 10; x += (1.0/WIDTH))
+        g.setColor(f.color);
+
+        double minX = -(WIDTH / (double)UNIT_X) / 2.0;
+
+        for(double x = minX; x < -minX; x += (1.0/(WIDTH)))
         {
             double y = f.evaluate(x);
 
@@ -48,44 +53,50 @@ public class Main extends JPanel
 
     public void drawData()
     {
-        g.setColor(new Color(180, 180, 180, 180));
-        g.fillRect(UNIT_X, UNIT_Y, UNIT_X * 4, UNIT_Y * functions.size());
 
-        AtomicInteger current = new AtomicInteger(1);
-        functions.forEach((func, col) -> {
-            g.setColor(col);
-            int x = UNIT_X, y = UNIT_Y * current.get();
-            g.fillOval(x + UNIT_X/4, y + UNIT_Y/4, UNIT_X/2, UNIT_Y/2);
-            g.setColor(Color.WHITE);
-            g.drawString(func.toString(), x + UNIT_X, y + UNIT_Y - UNIT_Y/4);
-            graphFunction(func, col);
+        functions.forEach(this::graphFunction);
+
+        AtomicInteger current = new AtomicInteger(0);
+        functions.forEach((func) -> {
+            int x = 0, y = (int) (CONST_UNIT_Y * current.get());
+
+            g.setColor(func.color);
+            g.fillOval((int) (x + CONST_UNIT_X/4), (int) (y + CONST_UNIT_Y/4), (int) (CONST_UNIT_X/2), (int) (CONST_UNIT_Y/2));
+            g.setColor(Color.BLACK);
+            g.drawOval((int) (x + CONST_UNIT_X/4), (int) (y + CONST_UNIT_Y/4), (int) (CONST_UNIT_X/2), (int) (CONST_UNIT_Y/2));
+            g.drawString( func.toString(), (int) (x + CONST_UNIT_X), (int) (y + CONST_UNIT_Y - CONST_UNIT_Y/3));
+            g.setColor(Color.DARK_GRAY);
+            drawThickLine(g, 0, (int)(y + CONST_UNIT_Y), OFFSET_X, (int)(y + CONST_UNIT_Y), 4, Color.BLACK);
             current.getAndIncrement();
         });
     }
     public void drawGridlines()
     {
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, WIDTH, HEIGHT);
+        g.setColor(Color.WHITE);
+        g.fillRect(OFFSET_X, 0, SCREEN_WIDTH, HEIGHT);
 
-        g.setColor(Color.DARK_GRAY);
-        for(int x = 0; x < WIDTH; x += UNIT_X)
+        g.setColor(Color.GRAY);
+        g.fillRect(0, 0, OFFSET_X, HEIGHT);
+
+        for(int x = OFFSET_X; x < SCREEN_WIDTH; x += UNIT_X)
         {
-            g.drawLine(x, 0, x, HEIGHT);
+            drawThickLine(g, x - 1, 0, x - 1, HEIGHT, 2, Color.LIGHT_GRAY);
         }
 
         for(int y = 0; y < HEIGHT; y += UNIT_Y)
         {
-            g.drawLine(0, y, WIDTH, y);
+            drawThickLine(g, OFFSET_X, y - 1, SCREEN_WIDTH, y - 1, 2, Color.LIGHT_GRAY);
         }
 
         /* Draw X Axis */
-        drawThickLine(g, 0, HALF_Y, WIDTH, HALF_Y, 4, Color.LIGHT_GRAY);
+        drawThickLine(g, OFFSET_X, HALF_Y + 1, SCREEN_WIDTH, HALF_Y + 1, 6, Color.BLACK);
 
         /* Draw Y Axis */
-        drawThickLine(g, HALF_X, 0, HALF_X, HEIGHT, 4, Color.LIGHT_GRAY);
-    }
+        drawThickLine(g, HALF_X - 3, 0, HALF_X - 3, HEIGHT, 6, Color.BLACK);
 
-    private static final Color[] colors = new Color[]{Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA, Color.PINK, Color.CYAN, Color.YELLOW, Color.ORANGE};
+        /* Draw Separator */
+        drawThickLine(g, OFFSET_X - 2, 0, OFFSET_X - 2, HEIGHT, 4, Color.DARK_GRAY);
+    }
     private class KeyboardInput implements KeyListener
     {
 
@@ -102,18 +113,93 @@ public class Main extends JPanel
         @Override
         public void keyReleased(KeyEvent e)
         {
-            if(e.getKeyChar() != 'n') return;
-            try {
-                String data = JOptionPane.showInputDialog("Enter a function - f(x)");
-                ComplexFunction func = ComplexFunction.parseFunction(data);
 
-                Color col = colors[(int)(Math.random() * colors.length)];
-                functions.put(func, col);
+            if(e.getKeyChar() == 'r')
+            {
+                functions.clear();
+                UNIT_X = CONST_UNIT_X;
+                UNIT_Y = CONST_UNIT_Y;
+                drawGridlines();
+                repaint();
+            }
+
+            if(e.getKeyChar() == '+')
+            {
+                if(UNIT_X >= WIDTH / 8.0) return;
+                UNIT_X *= 2.0;
+                UNIT_Y *= 2.0;
+                drawGridlines();
+                drawData();
+                repaint();
+                return;
+            }
+
+            if(e.getKeyChar() == '-') {
+                if(UNIT_X <= WIDTH / 80.0) return;
+                UNIT_X /= 2.0;
+                UNIT_Y /= 2.0;
+                drawGridlines();
+                drawData();
+                repaint();
+                return;
+            }
+
+            if(e.getKeyChar() == 'e')
+            {
+                ArrayList<String> functionOptions = new ArrayList<>();
+                functions.forEach(f -> functionOptions.add(f.name));
+                String func = (String) JOptionPane.showInputDialog(null, "Choose a function", "Evaluate function", JOptionPane.QUESTION_MESSAGE, null, functionOptions.toArray(), functionOptions.get(0));
+                if(func == null)
+                {
+                    return;
+                }
+
+                ComplexFunction function = null;
+                for(ComplexFunction f : functions)
+                {
+                    if(f.name.equals(func))
+                    {
+                        function = f;
+                    }
+                }
+
+                if(function == null)
+                {
+                    return;
+                }
+
+                String numIn = (String) JOptionPane.showInputDialog(null, "Enter an x value", "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
+                if(numIn == null)
+                {
+                    return;
+                }
+
+                double x = Double.parseDouble(numIn);
+                JOptionPane.showMessageDialog(null, function.toString().replace("x", numIn) + " = " + function.evaluate(x), "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
+
+            }
+
+            if(e.getKeyChar() != 'n') return;
+
+            ComplexFunction func = null;
+
+            try {
+                String data = JOptionPane.showInputDialog("Enter a function of x");
+                if(data == null)
+                {
+                    return;
+                }
+                func = ComplexFunction.parseFunction(data, true);
+                functions.add(func);
                 drawGridlines();
                 drawData();
                 repaint();
             } catch (Exception exception) {
-                JOptionPane.showMessageDialog(null, "Syntax Error");
+                JOptionPane.showMessageDialog(null, "Syntax Error, use functional notation - 'f(x) = x^2' ");
+                if(func != null){
+                    functions.remove(func);
+                }
+                exception.printStackTrace();
             }
         }
     }
@@ -128,7 +214,7 @@ public class Main extends JPanel
         JFrame frame = new JFrame();
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setTitle("Taha's Graphing Calculator");
-        frame.setSize(WIDTH, HEIGHT);
+        frame.setSize(SCREEN_WIDTH, HEIGHT);
         frame.setContentPane(new Main());
         frame.setVisible(true);
     }

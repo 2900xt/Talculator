@@ -4,6 +4,17 @@ public class BasicFunction
 {
     public double a, b;
     public FunctionType type;
+    public TrigFunctionType trigType;
+    public enum TrigFunctionType
+    {
+        SINE,
+        COSINE,
+        TANGENT,
+        COSECANT,
+        SECANT,
+        COTANGENT
+    };
+
     public enum FunctionType
     {
         /* Polynomial Functions -
@@ -32,11 +43,14 @@ public class BasicFunction
 
         /* Trigonometric Functions -
          *
-         * a = power of sine
+         * a = power of function
          * b = coefficient of term
-         * f(x) = b * sin a (  x )
+         * f(x) = b * sin^a (  x )
          */
         Trigonometric,
+
+        /* Same thing as regular trig functions */
+        InverseTrig,
     }
 
     public BasicFunction(double a, double b, FunctionType type)
@@ -46,35 +60,114 @@ public class BasicFunction
         this.type = type;
     }
 
+    public double evaluateTrigFunction(double x)
+    {
+        double result = NaN;
+        switch(trigType)
+        {
+            case SINE ->
+            {
+                result = b * Math.pow(Math.sin(x), a);
+                break;
+            }
+            case COSINE ->
+            {
+                result = b * Math.pow(Math.cos(x), a);
+                break;
+            }
+            case TANGENT ->
+            {
+                result = b * Math.pow(Math.sin(x) / Math.cos(x), a);
+                break;
+            }
+            case COSECANT ->
+            {
+                result = b * Math.pow(1 / Math.sin(x), a);
+                break;
+            }
+            case SECANT ->
+            {
+                result = b * Math.pow(1 / Math.cos(x), a);
+            }
+            case COTANGENT ->
+            {
+                result = b * Math.pow(Math.cos(x) / Math.sin(x), a);
+            }
+        }
+        return result;
+    }
+
+    public double evaluateInverseTrigFunction(double x)
+    {
+        double result = NaN;
+        switch(trigType)
+        {
+            case SINE ->
+            {
+                result = b * Math.pow(Math.asin(x), a);
+                break;
+            }
+            case COSINE ->
+            {
+                result = b * Math.pow(Math.acos(x), a);
+                break;
+            }
+            case TANGENT ->
+            {
+                result = b * Math.pow(Math.atan(x), a);
+                break;
+            }
+            case COSECANT ->
+            {
+                result = b * Math.pow(Math.asin(1 / x), a);
+                break;
+            }
+            case SECANT ->
+            {
+                result = b * Math.pow(Math.acos(1 / x), a);
+            }
+            case COTANGENT ->
+            {
+                result = b * Math.pow((Math.PI / 2) - Math.atan(x), a);
+            }
+        }
+        return result;
+    }
+
     public double evaluate(double x)
     {
+        double result = NaN;
         switch (type)
         {
             case Exponential -> {
-                return Math.pow(b, a * x);
+                result = Math.pow(b, a * x);
             }
             case Polynomial -> {
-                return a * Math.pow(x, b);
+                result = a * Math.pow(x, b);
             }
             case Trigonometric -> {
-                return b * Math.pow(Math.sin(x), a);
+                result = evaluateTrigFunction(x);
             }
             case Logarithmic -> {
-                return Math.log(a * x) / Math.log(b);
+                result = Math.log(a * x) / Math.log(b);
+            }
+            case InverseTrig -> {
+                result = evaluateInverseTrigFunction(x);
             }
             default -> {
                 System.err.println("Unknown Function type for basic functions");
             }
         }
-        return NaN;
+        return result;
     }
 
     public BasicFunction inverse()
     {
         if(type == FunctionType.Trigonometric)
         {
-            System.out.println("Trig inverse function doesn't exist");
-            return null;
+            BasicFunction f = new BasicFunction(a, b, FunctionType.InverseTrig);
+            f.trigType = trigType;
+            return f;
         }
 
         if(type == FunctionType.Polynomial)
@@ -97,32 +190,130 @@ public class BasicFunction
 
     public BasicFunction derivative()
     {
-        if(type != FunctionType.Polynomial)
+        /* Power rule */
+        if(type == FunctionType.Polynomial)
         {
-            return null;
+            return new BasicFunction(b * a, b - 1, FunctionType.Polynomial);
+        }
+        if(type == FunctionType.Trigonometric)
+        {
+            BasicFunction f = null;
+            switch (trigType)
+            {
+                case SINE ->
+                {
+                    f = new BasicFunction(a, b, FunctionType.Trigonometric);
+                    f.trigType = TrigFunctionType.COSINE;
+                }
+                case COSINE ->
+                {
+                    f = new BasicFunction(a, -b, FunctionType.Trigonometric);
+                    f.trigType = TrigFunctionType.SINE;
+                }
+                case TANGENT ->
+                {
+                    f = new BasicFunction(a * 2, b, FunctionType.Trigonometric);
+                    f.trigType = TrigFunctionType.SECANT;
+                }
+            }
+            return f;
         }
 
-        return new BasicFunction(b * a, b - 1, FunctionType.Polynomial);
+        return null;
+
     }
 
     public String toString()
     {
-        switch (type)
+        String aString = "" + round(a, 2);
+        if(aString.equals("1.0"))
         {
+            aString = "";
+        }
+
+        String bString = "" + round(b, 2);
+        if(bString.equals("1.0"))
+        {
+            bString = "";
+        }
+
+
+        switch (type) {
             case Polynomial -> {
-                return round(a, 2) + " * x^" + round(b, 2);
+                if (bString.equals("0.0")) {
+                    return "" + a;
+                }
+                if (aString.equals("") && bString.equals("")) {
+                    return "x";
+                }
+                if (aString.equals("")) {
+                    return "x^" + bString;
+                }
+                if (bString.equals("")) {
+                    return aString + " * x";
+                }
+                return aString + " * x^" + bString;
             }
             case Exponential -> {
-                return round(b, 2) + "^(" + round(a, 2) + " * x)";
+                if (bString.equals("2.72") && aString.equals("")) {
+                    return "e^(x)";
+                }
+                if (aString.equals("")) {
+                    return bString + "^(x)";
+                }
+                if (bString.equals("2.72")) {
+                    return "e^(" + aString + " * x)";
+                }
+                return bString + "^(" + aString + " * x)";
             }
             case Logarithmic -> {
-                return "log" + round(b, 2) + "(" + round(a, 2) + " * x)";
+                if (bString.equals("2.72")) {
+                    if (aString.equals("")) {
+                        return "ln(x)";
+                    }
+                    return "ln(" + aString + " * x)";
+                }
+
+                if (bString.equals("10.0")) {
+                    if (aString.equals("")) {
+                        return "log(x)";
+                    }
+                    return "log(" + aString + " * x)";
+                }
+
+                if (aString.equals("")) {
+                    return "log" + bString + "(x)";
+                }
+                return "log" + bString + "(" + aString + " * x)";
             }
-            case Trigonometric -> {
-                return round(b, 2) + "* sin" + round(a, 2) + "(x)";
+            case InverseTrig, Trigonometric -> {
+                String function = "";
+                switch (trigType) {
+                    case SINE -> function = "sin";
+                    case COSINE -> function = "cos";
+                    case TANGENT -> function = "tan";
+                    case COSECANT -> function = "csc";
+                    case SECANT -> function = "sec";
+                    case COTANGENT -> function = "cot";
+                }
+                if (type == FunctionType.InverseTrig) {
+                    function = "arc" + function;
+                }
+                if (bString.equals("") && aString.equals("")) {
+                    return function + "(x)";
+                }
+                if (bString.equals("")) {
+                    return function + aString + "(x)";
+                }
+                if (aString.equals("")) {
+                    return bString + "*" + function + "(x)";
+                }
+                return bString + "*" + function + aString + "(x)";
+            }
+            default -> {
+                return null;
             }
         }
-        return null;
     }
 
     private static double round(double val, double place)
@@ -149,8 +340,139 @@ public class BasicFunction
             {
                 power = Double.parseDouble(term.substring(sinInd, parInd));
             }
+            BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
 
-            return new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+            if(term.contains("arc"))
+            {
+                f.type = FunctionType.InverseTrig;
+            }
+
+            f.trigType = TrigFunctionType.SINE;
+
+            return f;
+        }
+        if(term.contains("cos"))
+        {
+        double coefficient = 1;
+        int asteriskInd = term.indexOf("*");
+        if(asteriskInd != -1)
+        {
+            coefficient = Double.parseDouble(term.substring(0, asteriskInd));
+        }
+
+        double power = 1;
+        int parInd = term.indexOf("(");
+        int sinInd = term.indexOf("s") + 1;
+        if(sinInd != parInd)
+        {
+            power = Double.parseDouble(term.substring(sinInd, parInd));
+        }
+        BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+        f.trigType = TrigFunctionType.COSINE;
+
+
+        if(term.contains("arc"))
+        {
+            f.type = FunctionType.InverseTrig;
+        }
+
+        return f;
+    }
+        if(term.contains("tan"))
+        {
+            double coefficient = 1;
+            int asteriskInd = term.indexOf("*");
+            if(asteriskInd != -1)
+            {
+                coefficient = Double.parseDouble(term.substring(0, asteriskInd));
+            }
+
+            double power = 1;
+            int parInd = term.indexOf("(");
+            int sinInd = term.indexOf("n") + 1;
+            if(sinInd != parInd)
+            {
+                power = Double.parseDouble(term.substring(sinInd, parInd));
+            }
+            BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+            f.trigType = TrigFunctionType.TANGENT;
+            if(term.contains("arc"))
+            {
+                f.type = FunctionType.InverseTrig;
+            }
+            return f;
+        }
+        if(term.contains("csc"))
+        {
+            double coefficient = 1;
+            int asteriskInd = term.indexOf("*");
+            if(asteriskInd != -1)
+            {
+                coefficient = Double.parseDouble(term.substring(0, asteriskInd));
+            }
+
+            double power = 1;
+            int parInd = term.indexOf("(");
+            int sinInd = term.indexOf("csc") + 3;
+            if(sinInd != parInd)
+            {
+                power = Double.parseDouble(term.substring(sinInd, parInd));
+            }
+            BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+            f.trigType = TrigFunctionType.COSECANT;
+            if(term.contains("arc"))
+            {
+                f.type = FunctionType.InverseTrig;
+            }
+            return f;
+        }
+        if(term.contains("sec"))
+        {
+            double coefficient = 1;
+            int asteriskInd = term.indexOf("*");
+            if(asteriskInd != -1)
+            {
+                coefficient = Double.parseDouble(term.substring(0, asteriskInd));
+            }
+
+            double power = 1;
+            int parInd = term.indexOf("(");
+            int sinInd = term.indexOf("sec") + 3;
+            if(sinInd != parInd)
+            {
+                power = Double.parseDouble(term.substring(sinInd, parInd));
+            }
+            BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+            f.trigType = TrigFunctionType.SECANT;
+            if(term.contains("arc"))
+            {
+                f.type = FunctionType.InverseTrig;
+            }
+            return f;
+        }
+        if(term.contains("cot"))
+        {
+            double coefficient = 1;
+            int asteriskInd = term.indexOf("*");
+            if(asteriskInd != -1)
+            {
+                coefficient = Double.parseDouble(term.substring(0, asteriskInd));
+            }
+
+            double power = 1;
+            int parInd = term.indexOf("(");
+            int sinInd = term.indexOf("t") + 1;
+            if(sinInd != parInd)
+            {
+                power = Double.parseDouble(term.substring(sinInd, parInd));
+            }
+            BasicFunction f = new BasicFunction(power, coefficient, FunctionType.Trigonometric);
+            f.trigType = TrigFunctionType.COTANGENT;
+            if(term.contains("arc"))
+            {
+                f.type = FunctionType.InverseTrig;
+            }
+            return f;
         }
 
         /* Logarithmic */
@@ -183,7 +505,11 @@ public class BasicFunction
         if(term.contains("^("))
         {
             int baseInd = term.indexOf("^");
-            double base = Double.parseDouble(term.substring(0, baseInd));
+            double base = Math.E;
+            if(term.charAt(0) != 'e' && term.charAt(1) != 'e')
+            {
+                base = Double.parseDouble(term.substring(0, baseInd));
+            }
             int asteriskInd = term.indexOf("*");
             double coefficient = 1;
             if(asteriskInd != -1)
