@@ -1,6 +1,7 @@
 import org.jetbrains.annotations.NotNull;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class ComplexFunction
 {
@@ -147,5 +148,28 @@ public class ComplexFunction
         }
         if(data.contains("inv")) return func.inverse();
         return func;
+    }
+
+    public static int regressionCount = 0;
+
+    public static ComplexFunction fromRegression(HashMap<Double, Double> data)
+    {
+        final double[] lowestX = { Double.POSITIVE_INFINITY };
+        final double[] lowestY = { Double.POSITIVE_INFINITY };
+        final double[] highestX = { Double.NEGATIVE_INFINITY };
+        final double[] highestY = { Double.NEGATIVE_INFINITY };
+        data.forEach((x, y) ->
+                {
+                    lowestX[0] = Math.min(x, lowestX[0]);
+                    lowestY[0] = Math.min(y, lowestY[0]);
+                    highestX[0] = Math.max(x, highestX[0]);
+                    highestY[0] = Math.max(y, highestY[0]);
+                }
+        );
+        // y - mx = b
+        double weight = (highestY[0] - lowestY[0]) / (highestX[0] - lowestX[0]);
+        double bias = lowestY[0] - weight * lowestX[0];
+
+        return ComplexFunction.parseFunction("r" + (++regressionCount) + "(x) = " + weight + " * x + " + bias, true);
     }
 }

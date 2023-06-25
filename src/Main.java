@@ -1,12 +1,20 @@
+import Regression.ExponentialModel;
+import Regression.LinearModel;
+import Regression.LogarithmicModel;
+import Regression.PolynomialModel;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Main extends JPanel
 {
@@ -15,21 +23,47 @@ public class Main extends JPanel
     public static double UNIT_X = WIDTH / 20.0, UNIT_Y = HEIGHT / 20.0;
     public static final double CONST_UNIT_X = UNIT_X, CONST_UNIT_Y = UNIT_Y;
     public static final int HALF_X = (WIDTH / 2) + OFFSET_X, HALF_Y = (HEIGHT / 2);
+    public static final ImageIcon plusSign = new ImageIcon("src/Resources/plus.png");
     public BufferedImage image;
     public Graphics g;
     public ArrayList<ComplexFunction> functions;
+    RegressionUI lr;
     public Main()
     {
-        super();
         image = new BufferedImage(SCREEN_WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
         g = image.getGraphics();
-        functions = new ArrayList<>();
         g.setFont(new Font("Segoe Script", Font.BOLD, 24));
+        functions = new ArrayList<>();
         addKeyListener(new KeyboardInput());
+        addMouseListener(new MouseInput());
         setFocusable(true);
-        drawGridlines();
-    }
 
+        lr = new RegressionUI(this::evaluateRegression);
+        lr.setVisible(false);
+
+        drawData();
+    }
+    public void evaluateRegression(HashMap<Double, Double> data)
+    {
+        LinearModel model;
+        switch((String) Objects.requireNonNull(lr.regressionTypeComboBox.getSelectedItem()))
+        {
+            case "Linear" -> model = new LinearModel();
+            case "Polynomial" -> model = new PolynomialModel(Double.parseDouble(lr.degreeField.getText()));
+            case "Exponential" -> model = new ExponentialModel();
+            case "Logarithmic" -> model = new LogarithmicModel();
+            default -> {
+                return;
+            }
+        }
+
+        model.trainTo(data, 1000);
+        ComplexFunction r = ComplexFunction.parseFunction(model.toEquation(), true);
+        functions.add(r);
+        drawGridlines();
+        drawData();
+        repaint();
+    }
     public void plotPoint(double x, double y)
     {
         int xpos = (int)(x * UNIT_X) + HALF_X, ypos = (int)(-y * UNIT_Y) + HALF_Y;
@@ -50,10 +84,9 @@ public class Main extends JPanel
             plotPoint(x, y);
         }
     }
-
     public void drawData()
     {
-
+        drawGridlines();
         functions.forEach(this::graphFunction);
 
         AtomicInteger current = new AtomicInteger(0);
@@ -69,6 +102,8 @@ public class Main extends JPanel
             drawThickLine(g, 0, (int)(y + CONST_UNIT_Y), OFFSET_X, (int)(y + CONST_UNIT_Y), 4, Color.BLACK);
             current.getAndIncrement();
         });
+        drawButtons();
+        repaint();
     }
     public void drawGridlines()
     {
@@ -80,7 +115,7 @@ public class Main extends JPanel
 
         for(int x = OFFSET_X; x < SCREEN_WIDTH; x += UNIT_X)
         {
-            drawThickLine(g, x - 1, 0, x - 1, HEIGHT, 2, Color.LIGHT_GRAY);
+            drawThickLine(g, x , 0, x, HEIGHT, 2, Color.LIGHT_GRAY);
         }
 
         for(int y = 0; y < HEIGHT; y += UNIT_Y)
@@ -89,7 +124,7 @@ public class Main extends JPanel
         }
 
         /* Draw X Axis */
-        drawThickLine(g, OFFSET_X, HALF_Y + 1, SCREEN_WIDTH, HALF_Y + 1, 6, Color.BLACK);
+        drawThickLine(g, OFFSET_X, HALF_Y + 3, SCREEN_WIDTH, HALF_Y + 3, 6, Color.BLACK);
 
         /* Draw Y Axis */
         drawThickLine(g, HALF_X - 3, 0, HALF_X - 3, HEIGHT, 6, Color.BLACK);
@@ -97,128 +132,159 @@ public class Main extends JPanel
         /* Draw Separator */
         drawThickLine(g, OFFSET_X - 2, 0, OFFSET_X - 2, HEIGHT, 4, Color.DARK_GRAY);
     }
-    private class KeyboardInput implements KeyListener
+    public void drawButtons()
     {
-
-        @Override
-        public void keyTyped(KeyEvent e) {
-
+        g.setColor(Color.WHITE);
+        g.fillOval(NF_BOX_X - 8, NF_BOX_Y - 8, NF_BOX_W + 16, NF_BOX_H + 16);
+        g.drawImage(plusSign.getImage(), NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, null);
+    }
+    public void clearFunctions()
+    {
+        functions.clear();
+        UNIT_X = CONST_UNIT_X;
+        UNIT_Y = CONST_UNIT_Y;
+        drawData();
+    }
+    public void zoom(double factor)
+    {
+        UNIT_X *= factor;
+        UNIT_Y *= factor;
+        drawData();
+    }
+    public void evaluateAt()
+    {
+        ArrayList<String> functionOptions = new ArrayList<>();
+        functions.forEach(f -> functionOptions.add(f.name));
+        String func = (String) JOptionPane.showInputDialog(null, "Choose a function", "Evaluate function", JOptionPane.QUESTION_MESSAGE, null, functionOptions.toArray(), functionOptions.get(0));
+        if(func == null)
+        {
+            return;
         }
 
+        ComplexFunction function = null;
+        for(ComplexFunction f : functions)
+        {
+            if(f.name.equals(func))
+            {
+                function = f;
+            }
+        }
+
+        if(function == null)
+        {
+            return;
+        }
+
+        String numIn = (String) JOptionPane.showInputDialog(null, "Enter an x value", "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
+        if(numIn == null)
+        {
+            return;
+        }
+
+        double x = Double.parseDouble(numIn);
+        JOptionPane.showMessageDialog(null, function.toString().replace("x", numIn) + " = " + function.evaluate(x), "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
+    }
+    public void createFunction()
+    {
+        ComplexFunction func = null;
+
+        try {
+            String data = JOptionPane.showInputDialog("Enter a function of x");
+            if(data == null)
+            {
+                return;
+            }
+            func = ComplexFunction.parseFunction(data, true);
+            functions.add(func);
+            drawGridlines();
+            drawData();
+            repaint();
+        } catch (Exception exception) {
+            JOptionPane.showMessageDialog(null, "Syntax Error, use functional notation - 'f(x) = x^2' ");
+            if(func != null){
+                functions.remove(func);
+            }
+            exception.printStackTrace();
+        }
+    }
+    public boolean isInRect(int x, int y, int width, int height, int mx, int my)
+    {
+        return     mx >= x
+                && mx <= x + width
+                && my >= y
+                && my <= y + height;
+    }
+    private class KeyboardInput implements KeyListener
+    {
+        @Override
+        public void keyTyped(KeyEvent e) {}
+        @Override
+        public void keyReleased(KeyEvent e) {}
         @Override
         public void keyPressed(KeyEvent e)
         {
+            if(e.getKeyCode() == KeyEvent.VK_R && e.isControlDown())
+            {
+                clearFunctions();
+                return;
+            }
+
+            if(e.getKeyCode() == KeyEvent.VK_EQUALS && e.isControlDown())
+            {
+                zoom(2.0);
+                return;
+            }
+
+            if(e.getKeyCode() == KeyEvent.VK_MINUS && e.isControlDown()) {
+                zoom(0.5);
+                return;
+            }
+
+            if(e.getKeyCode() == KeyEvent.VK_E && e.isControlDown())
+            {
+                evaluateAt();
+            }
+
+            if(e.getKeyCode() == KeyEvent.VK_R && e.isAltDown())
+            {
+                SwingUtilities.invokeLater(() -> lr.setVisible(true));
+            }
+
+            if(e.getKeyCode() == KeyEvent.VK_INSERT)
+            {
+                createFunction();
+            }
+        }
+    }
+    private static final int NF_BOX_X = 15, NF_BOX_Y = 1280, NF_BOX_W = 55, NF_BOX_H = 55;
+    private class MouseInput implements MouseListener
+    {
+        @Override
+        public void mouseClicked(MouseEvent e) {}
+        @Override
+        public void mousePressed(MouseEvent e) {}
+        @Override
+        public void mouseReleased(MouseEvent e)
+        {
+            int x = (int) (e.getX() * 1.32), y = (int) (e.getY() * 1.37);
+            if(isInRect(NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, x, y))
+            {
+                createFunction();
+                return;
+            }
+
         }
 
         @Override
-        public void keyReleased(KeyEvent e)
-        {
-
-            if(e.getKeyChar() == 'r')
-            {
-                functions.clear();
-                UNIT_X = CONST_UNIT_X;
-                UNIT_Y = CONST_UNIT_Y;
-                drawGridlines();
-                repaint();
-            }
-
-            if(e.getKeyChar() == '+')
-            {
-                if(UNIT_X >= WIDTH / 8.0) return;
-                UNIT_X *= 2.0;
-                UNIT_Y *= 2.0;
-                drawGridlines();
-                drawData();
-                repaint();
-                return;
-            }
-
-            if(e.getKeyChar() == '-') {
-                if(UNIT_X <= WIDTH / 80.0) return;
-                UNIT_X /= 2.0;
-                UNIT_Y /= 2.0;
-                drawGridlines();
-                drawData();
-                repaint();
-                return;
-            }
-
-            if(e.getKeyChar() == 'e')
-            {
-                ArrayList<String> functionOptions = new ArrayList<>();
-                functions.forEach(f -> functionOptions.add(f.name));
-                String func = (String) JOptionPane.showInputDialog(null, "Choose a function", "Evaluate function", JOptionPane.QUESTION_MESSAGE, null, functionOptions.toArray(), functionOptions.get(0));
-                if(func == null)
-                {
-                    return;
-                }
-
-                ComplexFunction function = null;
-                for(ComplexFunction f : functions)
-                {
-                    if(f.name.equals(func))
-                    {
-                        function = f;
-                    }
-                }
-
-                if(function == null)
-                {
-                    return;
-                }
-
-                String numIn = (String) JOptionPane.showInputDialog(null, "Enter an x value", "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
-                if(numIn == null)
-                {
-                    return;
-                }
-
-                double x = Double.parseDouble(numIn);
-                JOptionPane.showMessageDialog(null, function.toString().replace("x", numIn) + " = " + function.evaluate(x), "Evaluate Function - " + func + "(x)", JOptionPane.PLAIN_MESSAGE);
-
-            }
-
-            if(e.getKeyChar() != 'n') return;
-
-            ComplexFunction func = null;
-
-            try {
-                String data = JOptionPane.showInputDialog("Enter a function of x");
-                if(data == null)
-                {
-                    return;
-                }
-                func = ComplexFunction.parseFunction(data, true);
-                functions.add(func);
-                drawGridlines();
-                drawData();
-                repaint();
-            } catch (Exception exception) {
-                JOptionPane.showMessageDialog(null, "Syntax Error, use functional notation - 'f(x) = x^2' ");
-                if(func != null){
-                    functions.remove(func);
-                }
-                exception.printStackTrace();
-            }
-        }
+        public void mouseEntered(MouseEvent e) {}
+        @Override
+        public void mouseExited(MouseEvent e) {}
     }
     @Override
     protected void paintComponent(Graphics g)
     {
         g.drawImage(image, 0, 0, getWidth(), getHeight(), null);
     }
-
-    public static void main(String[] args)
-    {
-        JFrame frame = new JFrame();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setTitle("Taha's Graphing Calculator");
-        frame.setSize(SCREEN_WIDTH, HEIGHT);
-        frame.setContentPane(new Main());
-        frame.setVisible(true);
-    }
-
     public static void drawThickLine(Graphics g, int x1, int y1, int x2, int y2, int thickness, Color c) {
 
         // credit for the code: https://www.rgagnon.com/javadetails/java-0260.html
@@ -249,6 +315,15 @@ public class Main extends JPanel
         xPoints[3] = x2 + dx; yPoints[3] = y2 + dy;
 
         g.fillPolygon(xPoints, yPoints, 4);
+    }
+    public static void main(String[] args)
+    {
+        JFrame frame = new JFrame();
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setTitle("Taha's Graphing Calculator");
+        frame.setSize(SCREEN_WIDTH, HEIGHT);
+        frame.setContentPane(new Main());
+        frame.setVisible(true);
     }
 
 }

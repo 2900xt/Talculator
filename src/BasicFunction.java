@@ -241,7 +241,7 @@ public class BasicFunction
         switch (type) {
             case Polynomial -> {
                 if (bString.equals("0.0")) {
-                    return "" + a;
+                    return aString;
                 }
                 if (aString.equals("") && bString.equals("")) {
                     return "x";
