@@ -23,7 +23,10 @@ public class Main extends JPanel
     public static double UNIT_X = WIDTH / 20.0, UNIT_Y = HEIGHT / 20.0;
     public static final double CONST_UNIT_X = UNIT_X, CONST_UNIT_Y = UNIT_Y;
     public static final int HALF_X = (WIDTH / 2) + OFFSET_X, HALF_Y = (HEIGHT / 2);
-    public static final ImageIcon plusSign = new ImageIcon("src/Resources/plus.png");
+    public static final ImageIcon addIcon = new ImageIcon("src/Resources/plus.png");
+    public static final ImageIcon evaluateIcon = new ImageIcon("src/Resources/evaluate.png");
+    public static final ImageIcon regressionIcon = new ImageIcon("src/Resources/regression.png");
+    public static final ImageIcon resetIcon = new ImageIcon("src/Resources/reset.png");
     public BufferedImage image;
     public Graphics g;
     public ArrayList<ComplexFunction> functions;
@@ -120,23 +123,29 @@ public class Main extends JPanel
 
         for(int y = 0; y < HEIGHT; y += UNIT_Y)
         {
-            drawThickLine(g, OFFSET_X, y - 1, SCREEN_WIDTH, y - 1, 2, Color.LIGHT_GRAY);
+            drawThickLine(g, OFFSET_X, y, SCREEN_WIDTH, y, 2, Color.LIGHT_GRAY);
         }
 
         /* Draw X Axis */
-        drawThickLine(g, OFFSET_X, HALF_Y + 3, SCREEN_WIDTH, HALF_Y + 3, 6, Color.BLACK);
+        drawThickLine(g, OFFSET_X, HALF_Y, SCREEN_WIDTH, HALF_Y, 6, Color.BLACK);
 
         /* Draw Y Axis */
-        drawThickLine(g, HALF_X - 3, 0, HALF_X - 3, HEIGHT, 6, Color.BLACK);
+        drawThickLine(g, HALF_X, 0, HALF_X, HEIGHT, 6, Color.BLACK);
 
         /* Draw Separator */
-        drawThickLine(g, OFFSET_X - 2, 0, OFFSET_X - 2, HEIGHT, 4, Color.DARK_GRAY);
+        drawThickLine(g, OFFSET_X, 0, OFFSET_X, HEIGHT, 4, Color.DARK_GRAY);
     }
     public void drawButtons()
     {
         g.setColor(Color.WHITE);
         g.fillOval(NF_BOX_X - 8, NF_BOX_Y - 8, NF_BOX_W + 16, NF_BOX_H + 16);
-        g.drawImage(plusSign.getImage(), NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, null);
+        g.drawImage(addIcon.getImage(), NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, null);
+        g.fillOval(RG_BOX_X - 8, RG_BOX_Y - 8, RG_BOX_W + 16, RG_BOX_H + 16);
+        g.drawImage(regressionIcon.getImage(), RG_BOX_X, RG_BOX_Y, RG_BOX_W, RG_BOX_H, null);
+        g.fillOval(EV_BOX_X - 8, EV_BOX_Y - 8, EV_BOX_W + 16, EV_BOX_H + 16);
+        g.drawImage(evaluateIcon.getImage(), EV_BOX_X, EV_BOX_Y, EV_BOX_W, EV_BOX_H, null);
+        g.fillOval(CR_BOX_X - 8, CR_BOX_Y - 8, CR_BOX_W + 16, CR_BOX_H + 16);
+        g.drawImage(resetIcon.getImage(), CR_BOX_X, CR_BOX_Y, CR_BOX_W, CR_BOX_H, null);
     }
     public void clearFunctions()
     {
@@ -147,6 +156,11 @@ public class Main extends JPanel
     }
     public void zoom(double factor)
     {
+        if((UNIT_X * factor > CONST_UNIT_X * 4) || (UNIT_X * factor < CONST_UNIT_X / 4.0))
+        {
+            return;
+        }
+
         UNIT_X *= factor;
         UNIT_Y *= factor;
         drawData();
@@ -257,6 +271,9 @@ public class Main extends JPanel
         }
     }
     private static final int NF_BOX_X = 15, NF_BOX_Y = 1280, NF_BOX_W = 55, NF_BOX_H = 55;
+    private static final int EV_BOX_X = 100, EV_BOX_Y = 1280, EV_BOX_W = 55, EV_BOX_H = 55;
+    private static final int RG_BOX_X = 185, RG_BOX_Y = 1280, RG_BOX_W = 55, RG_BOX_H = 55;
+    private static final int CR_BOX_X = 270, CR_BOX_Y = 1280, CR_BOX_W = 55, CR_BOX_H = 55;
     private class MouseInput implements MouseListener
     {
         @Override
@@ -273,6 +290,22 @@ public class Main extends JPanel
                 return;
             }
 
+            if(isInRect(RG_BOX_X, RG_BOX_Y, RG_BOX_W, RG_BOX_H, x, y))
+            {
+                SwingUtilities.invokeLater(() -> lr.setVisible(true));
+                return;
+            }
+
+            if(isInRect(EV_BOX_X, EV_BOX_Y, EV_BOX_W, EV_BOX_H, x, y) && !functions.isEmpty())
+            {
+                evaluateAt();
+                return;
+            }
+
+            if(isInRect(CR_BOX_X, CR_BOX_Y, CR_BOX_W, CR_BOX_H, x, y))
+            {
+                clearFunctions();
+            }
         }
 
         @Override
@@ -325,5 +358,4 @@ public class Main extends JPanel
         frame.setContentPane(new Main());
         frame.setVisible(true);
     }
-
 }
