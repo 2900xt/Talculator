@@ -2,8 +2,6 @@ import Regression.ExponentialModel;
 import Regression.LinearModel;
 import Regression.LogarithmicModel;
 import Regression.PolynomialModel;
-
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -14,11 +12,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import javax.swing.*;
 
 public class Main extends JPanel
 {
-    public static final int SCREEN_WIDTH = 2560, OFFSET_X = 560;
-    public static final int WIDTH = SCREEN_WIDTH - OFFSET_X, HEIGHT = 1440;
+    public static final int SCREEN_WIDTH = 1280, OFFSET_X = 300;
+    public static final int WIDTH = SCREEN_WIDTH - OFFSET_X, HEIGHT = 720;
     public static double UNIT_X = WIDTH / 20.0, UNIT_Y = HEIGHT / 20.0;
     public static final double CONST_UNIT_X = UNIT_X, CONST_UNIT_Y = UNIT_Y;
     public static final int HALF_X = (WIDTH / 2) + OFFSET_X, HALF_Y = (HEIGHT / 2);
@@ -263,26 +262,55 @@ public class Main extends JPanel
                 SwingUtilities.invokeLater(() -> lr.setVisible(true));
             }
 
-            if(e.getKeyCode() == KeyEvent.VK_INSERT)
+            if(e.getKeyCode() == KeyEvent.VK_F1)
             {
                 createFunction();
             }
         }
     }
-    private static final int NF_BOX_X = 15, NF_BOX_Y = 1280, NF_BOX_W = 55, NF_BOX_H = 55;
-    private static final int EV_BOX_X = 100, EV_BOX_Y = 1280, EV_BOX_W = 55, EV_BOX_H = 55;
-    private static final int RG_BOX_X = 185, RG_BOX_Y = 1280, RG_BOX_W = 55, RG_BOX_H = 55;
-    private static final int CR_BOX_X = 270, CR_BOX_Y = 1280, CR_BOX_W = 55, CR_BOX_H = 55;
+    private static final int BUTTON_Y = HEIGHT - 60;
+    private static final int BUTTON_SPACING = 60;
+    private static final int BUTTON_START_X = (OFFSET_X - (4 * 40 + 3 * 20)) / 2;
+    private static final int NF_BOX_X = BUTTON_START_X, NF_BOX_Y = BUTTON_Y, NF_BOX_W = 40, NF_BOX_H = 40;
+    private static final int EV_BOX_X = BUTTON_START_X + BUTTON_SPACING, EV_BOX_Y = BUTTON_Y, EV_BOX_W = 40, EV_BOX_H = 40;
+    private static final int RG_BOX_X = BUTTON_START_X + 2 * BUTTON_SPACING, RG_BOX_Y = BUTTON_Y, RG_BOX_W = 40, RG_BOX_H = 40;
+    private static final int CR_BOX_X = BUTTON_START_X + 3 * BUTTON_SPACING, CR_BOX_Y = BUTTON_Y, CR_BOX_W = 40, CR_BOX_H = 40;
     private class MouseInput implements MouseListener
     {
         @Override
-        public void mouseClicked(MouseEvent e) {}
+        public void mouseClicked(MouseEvent e) {
+            int x = e.getX(), y = e.getY();
+            System.out.println(x + ", " + y);
+            System.out.println(NF_BOX_X + ", " + NF_BOX_Y + ", " + NF_BOX_W + ", " + NF_BOX_H);
+            if(isInRect(NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, x, y))
+            {
+                createFunction();
+                return;
+            }
+
+            if(isInRect(RG_BOX_X, RG_BOX_Y, RG_BOX_W, RG_BOX_H, x, y))
+            {
+                SwingUtilities.invokeLater(() -> lr.setVisible(true));
+                return;
+            }
+
+            if(isInRect(EV_BOX_X, EV_BOX_Y, EV_BOX_W, EV_BOX_H, x, y) && !functions.isEmpty())
+            {
+                evaluateAt();
+                return;
+            }
+
+            if(isInRect(CR_BOX_X, CR_BOX_Y, CR_BOX_W, CR_BOX_H, x, y))
+            {
+                clearFunctions();
+            }
+        }
         @Override
         public void mousePressed(MouseEvent e) {}
         @Override
         public void mouseReleased(MouseEvent e)
         {
-            int x = (int) (e.getX() * 1.32), y = (int) (e.getY() * 1.37);
+            int x = e.getX(), y = e.getY();
             if(isInRect(NF_BOX_X, NF_BOX_Y, NF_BOX_W, NF_BOX_H, x, y))
             {
                 createFunction();

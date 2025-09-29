@@ -1,4 +1,3 @@
-import org.jetbrains.annotations.NotNull;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ public class ComplexFunction
         return name + "(x) = " + out;
     }
 
-    public static @NotNull ComplexFunction parseFunction(String data, boolean firstExp)
+    public static ComplexFunction parseFunction(String data, boolean firstExp)
     {
         data = data.replace(" ", "");
 
